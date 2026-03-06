@@ -1,8 +1,8 @@
 /**
- * Initializes Firebase Auth (anonymous sign-in) and seeds data on first run.
+ * Listens for Firebase Auth state changes and seeds/loads user data.
  */
 import { useEffect } from 'react';
-import { signInAnonymously, onAuthStateChanged } from 'firebase/auth';
+import { onAuthStateChanged } from 'firebase/auth';
 import { auth } from '../firebase/config';
 import { getProfile, seedUserData } from '../firebase/dataLayer';
 import { setUser } from '../store/slices/authSlice';
@@ -17,9 +17,6 @@ export function useAppInit() {
   const dispatch = useAppDispatch();
 
   useEffect(() => {
-    // Kick off anonymous sign-in
-    signInAnonymously(auth).catch(console.error);
-
     const unsub = onAuthStateChanged(auth, async user => {
       if (!user) {
         dispatch(setUser(null));
