@@ -186,6 +186,15 @@ export function ProfilePage() {
     <Box p={2} pb={4}>
       <Typography variant="h5" fontWeight={700} gutterBottom>Profile</Typography>
       {stored && <ProfileForm stored={stored} uid={uid} />}
+      <Typography
+        variant="caption"
+        color="text.disabled"
+        align="center"
+        display="block"
+        mt={4}
+      >
+        Version {__APP_VERSION__}
+      </Typography>
     </Box>
   );
 }
