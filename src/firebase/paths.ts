@@ -1,6 +1,6 @@
 /** Centralised Firestore path helpers to avoid typos */
 export const paths = {
-  profile:         (uid: string) => `users/${uid}/profile`,
+  profile:         (uid: string) => `users/${uid}/profile/main`,
   exercises:       (uid: string) => `users/${uid}/exercises`,
   exercise:        (uid: string, id: string) => `users/${uid}/exercises/${id}`,
   routines:        (uid: string) => `users/${uid}/routines`,
