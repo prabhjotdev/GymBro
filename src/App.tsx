@@ -2,8 +2,9 @@ import { useMemo } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { ThemeProvider, createTheme, CssBaseline, Box, CircularProgress } from '@mui/material';
 import { useAppSelector } from './store/hooks';
-import { selectDarkMode, selectAuthLoading } from './store/selectors';
+import { selectDarkMode, selectAuthLoading, selectUid } from './store/selectors';
 import { useAppInit } from './hooks/useAppInit';
+import { LoginPage }    from './components/Auth/LoginPage';
 import { AppShell }     from './components/AppShell/AppShell';
 import { TodayPage }    from './components/Today/TodayPage';
 import { SchedulePage } from './components/Schedule/SchedulePage';
@@ -16,6 +17,7 @@ import { ProfilePage }   from './components/Profile/ProfilePage';
 function AppRoutes() {
   useAppInit();
   const authLoading = useAppSelector(selectAuthLoading);
+  const uid         = useAppSelector(selectUid);
   const darkMode    = useAppSelector(selectDarkMode);
 
   const theme = useMemo(
@@ -56,6 +58,15 @@ function AppRoutes() {
         <Box display="flex" justifyContent="center" alignItems="center" height="100vh">
           <CircularProgress size={48} />
         </Box>
+      </ThemeProvider>
+    );
+  }
+
+  if (!uid) {
+    return (
+      <ThemeProvider theme={theme}>
+        <CssBaseline />
+        <LoginPage />
       </ThemeProvider>
     );
   }

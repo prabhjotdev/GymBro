@@ -4,7 +4,9 @@ import {
   TextField, FormControl, InputLabel, Select, MenuItem,
   Button, Divider, Alert, Chip,
 } from '@mui/material';
-import { Save, Info } from '@mui/icons-material';
+import { Save, Info, Logout } from '@mui/icons-material';
+import { signOut } from 'firebase/auth';
+import { auth } from '../../firebase/config';
 import { useAppDispatch, useAppSelector } from '../../store/hooks';
 import { selectUid } from '../../store/selectors';
 import { updateProfile } from '../../store/slices/profileSlice';
@@ -122,13 +124,23 @@ export function ProfilePage() {
         </CardContent>
       </Card>
 
-      <Button
-        variant="contained" size="large" startIcon={<Save />} fullWidth
-        onClick={handleSave}
-        sx={{ borderRadius: 2, py: 1.5, mb: 3 }}
-      >
-        Save Profile
-      </Button>
+      <Stack direction="row" spacing={2} mb={3}>
+        <Button
+          variant="contained" size="large" startIcon={<Save />} fullWidth
+          onClick={handleSave}
+          sx={{ borderRadius: 2, py: 1.5 }}
+        >
+          Save Profile
+        </Button>
+        <Button
+          variant="outlined" size="large" startIcon={<Logout />}
+          onClick={() => signOut(auth)}
+          color="error"
+          sx={{ borderRadius: 2, py: 1.5, minWidth: 120 }}
+        >
+          Sign Out
+        </Button>
+      </Stack>
 
       {/* Recommendations */}
       {recs ? (
