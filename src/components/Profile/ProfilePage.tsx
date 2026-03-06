@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import {
   Box, Typography, Card, CardContent, Stack,
   TextField, FormControl, InputLabel, Select, MenuItem,
@@ -23,36 +23,26 @@ const ACTIVITY_OPTIONS: { value: ActivityLevel; label: string }[] = [
 ];
 
 const GOAL_OPTIONS: { value: Goal; label: string; color: 'error' | 'success' | 'info' }[] = [
-  { value: 'cut',      label: 'Cut (lose fat)',   color: 'error'   },
-  { value: 'maintain', label: 'Maintain weight',  color: 'info'    },
+  { value: 'cut',      label: 'Cut (lose fat)',      color: 'error'   },
+  { value: 'maintain', label: 'Maintain weight',     color: 'info'    },
   { value: 'bulk',     label: 'Bulk (build muscle)', color: 'success' },
 ];
 
-export function ProfilePage() {
+// Inner form — only rendered once `stored` is guaranteed non-null,
+// so useState can be initialized directly without a syncing useEffect.
+function ProfileForm({ stored, uid }: { stored: UserProfile; uid: string }) {
   const dispatch = useAppDispatch();
-  const uid      = useAppSelector(selectUid)!;
-  const stored   = useAppSelector(s => s.profile.data);
 
-  const [age,           setAge]           = useState<number | ''>(stored?.age ?? '');
-  const [heightCm,      setHeightCm]      = useState<number | ''>(stored?.heightCm ?? '');
-  const [weightKg,      setWeightKg]      = useState<number | ''>(stored?.weightKg ?? '');
-  const [activityLevel, setActivityLevel] = useState<ActivityLevel>(stored?.activityLevel ?? 'moderate');
-  const [goal,          setGoal]          = useState<Goal>(stored?.goal ?? 'maintain');
-
-  useEffect(() => {
-    if (stored) {
-      setAge(stored.age ?? '');
-      setHeightCm(stored.heightCm ?? '');
-      setWeightKg(stored.weightKg ?? '');
-      if (stored.activityLevel) setActivityLevel(stored.activityLevel);
-      if (stored.goal)          setGoal(stored.goal);
-    }
-  }, [stored]);
+  const [age,           setAge]           = useState<number | ''>(stored.age ?? '');
+  const [heightCm,      setHeightCm]      = useState<number | ''>(stored.heightCm ?? '');
+  const [weightKg,      setWeightKg]      = useState<number | ''>(stored.weightKg ?? '');
+  const [activityLevel, setActivityLevel] = useState<ActivityLevel>(stored.activityLevel ?? 'moderate');
+  const [goal,          setGoal]          = useState<Goal>(stored.goal ?? 'maintain');
 
   const partial: Partial<UserProfile> = {
-    age:           age           !== '' ? +age           : undefined,
-    heightCm:      heightCm      !== '' ? +heightCm      : undefined,
-    weightKg:      weightKg      !== '' ? +weightKg      : undefined,
+    age:      age      !== '' ? +age      : undefined,
+    heightCm: heightCm !== '' ? +heightCm : undefined,
+    weightKg: weightKg !== '' ? +weightKg : undefined,
     activityLevel, goal,
   };
 
@@ -64,9 +54,7 @@ export function ProfilePage() {
   }
 
   return (
-    <Box p={2} pb={4}>
-      <Typography variant="h5" fontWeight={700} gutterBottom>Profile</Typography>
-
+    <>
       <Card sx={{ borderRadius: 3, mb: 3 }} elevation={2}>
         <CardContent>
           <Typography variant="subtitle1" fontWeight={700} mb={2}>Body Stats</Typography>
@@ -186,6 +174,18 @@ export function ProfilePage() {
           Fill in your stats above to see calorie and protein recommendations.
         </Alert>
       )}
+    </>
+  );
+}
+
+export function ProfilePage() {
+  const uid    = useAppSelector(selectUid)!;
+  const stored = useAppSelector(s => s.profile.data);
+
+  return (
+    <Box p={2} pb={4}>
+      <Typography variant="h5" fontWeight={700} gutterBottom>Profile</Typography>
+      {stored && <ProfileForm stored={stored} uid={uid} />}
     </Box>
   );
 }

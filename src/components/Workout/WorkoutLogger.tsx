@@ -73,7 +73,7 @@ export function WorkoutLogger() {
       dispatch(clearDraft());
       dispatch(showSnackbar({ message: 'Workout saved! Great job!', severity: 'success' }));
       navigate('/today');
-    } catch (err) {
+    } catch (_err) {
       dispatch(showSnackbar({ message: 'Save failed – try again', severity: 'error' }));
     } finally {
       setSaving(false);
