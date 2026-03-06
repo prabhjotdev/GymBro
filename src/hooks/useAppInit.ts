@@ -23,22 +23,26 @@ export function useAppInit() {
         return;
       }
 
-      dispatch(setUser(user.uid));
+      try {
+        dispatch(setUser(user.uid));
 
-      // Check if first run for this user
-      const profile = await getProfile(user.uid);
-      if (!profile) {
-        await seedUserData(user.uid);
+        // Check if first run for this user
+        const profile = await getProfile(user.uid);
+        if (!profile) {
+          await seedUserData(user.uid);
+        }
+
+        // Load all data in parallel
+        await Promise.all([
+          dispatch(fetchProfile(user.uid)),
+          dispatch(fetchExercises(user.uid)),
+          dispatch(fetchRoutines(user.uid)),
+          dispatch(fetchSchedule(user.uid)),
+          dispatch(fetchSessions(user.uid)),
+        ]);
+      } catch (err) {
+        console.error('App init failed:', err);
       }
-
-      // Load all data in parallel
-      await Promise.all([
-        dispatch(fetchProfile(user.uid)),
-        dispatch(fetchExercises(user.uid)),
-        dispatch(fetchRoutines(user.uid)),
-        dispatch(fetchSchedule(user.uid)),
-        dispatch(fetchSessions(user.uid)),
-      ]);
     });
 
     return () => unsub();
