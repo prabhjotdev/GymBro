@@ -85,13 +85,15 @@ export function TodayPage() {
             </CardActions>
           </Card>
 
-          <ExercisePickerDialog
-            open={pickerOpen}
-            routineId={todayRoutine.id}
-            routineName={todayRoutine.name}
-            onClose={() => setPickerOpen(false)}
-            onStart={handleStart}
-          />
+          {pickerOpen && (
+            <ExercisePickerDialog
+              open
+              routineId={todayRoutine.id}
+              routineName={todayRoutine.name}
+              onClose={() => setPickerOpen(false)}
+              onStart={handleStart}
+            />
+          )}
         </>
       ) : (
         <Card sx={{ borderRadius: 3, mb: 3 }} elevation={2}>
