@@ -1,19 +1,28 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import {
   Box, Typography, Card, CardContent, Stack,
   TextField, FormControl, InputLabel, Select, MenuItem,
-  Button, Divider, Alert, Chip,
+  Button, Divider, Alert, Chip, CircularProgress,
+  Dialog, DialogTitle, DialogContent, DialogContentText, DialogActions,
 } from '@mui/material';
-import { Save, Info, Logout } from '@mui/icons-material';
+import { Save, Info, Logout, Download, Upload, DeleteForever } from '@mui/icons-material';
 import { signOut } from 'firebase/auth';
 import { auth } from '../../firebase/config';
 import { useAppDispatch, useAppSelector } from '../../store/hooks';
 import { selectUid } from '../../store/selectors';
-import { updateProfile } from '../../store/slices/profileSlice';
+import { updateProfile, fetchProfile } from '../../store/slices/profileSlice';
+import { fetchExercises } from '../../store/slices/exercisesSlice';
+import { fetchRoutines } from '../../store/slices/routinesSlice';
+import { fetchSchedule } from '../../store/slices/scheduleSlice';
+import { fetchSessions } from '../../store/slices/sessionsSlice';
 import { showSnackbar } from '../../store/slices/uiSlice';
 import type { ActivityLevel, Goal, UserProfile } from '../../types';
 import { calcCalories } from '../../utils';
 import { ACTIVITY_OPTIONS, GOAL_OPTIONS } from '../../constants/profileOptions';
+import {
+  exportUserData, importUserData, deleteAllUserData,
+  type GymBroExport,
+} from '../../firebase/dataLayer';
 
 // Inner form — only rendered once `stored` is guaranteed non-null,
 // so useState can be initialized directly without a syncing useEffect.
@@ -25,6 +34,12 @@ function ProfileForm({ stored, uid }: { stored: UserProfile; uid: string }) {
   const [weightKg,      setWeightKg]      = useState<number | ''>(stored.weightKg ?? '');
   const [activityLevel, setActivityLevel] = useState<ActivityLevel>(stored.activityLevel ?? 'moderate');
   const [goal,          setGoal]          = useState<Goal>(stored.goal ?? 'maintain');
+
+  const [dmBusy,        setDmBusy]        = useState(false);
+  const [deleteOpen,    setDeleteOpen]    = useState(false);
+  const [importOpen,    setImportOpen]    = useState(false);
+  const [pendingImport, setPendingImport] = useState<GymBroExport | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const partial: Partial<UserProfile> = {
     age:      age      !== '' ? +age      : undefined,
@@ -38,6 +53,84 @@ function ProfileForm({ stored, uid }: { stored: UserProfile; uid: string }) {
   async function handleSave() {
     await dispatch(updateProfile({ uid, data: { ...partial, updatedAt: Date.now() } }));
     dispatch(showSnackbar({ message: 'Profile saved!' }));
+  }
+
+  async function reloadData() {
+    await Promise.all([
+      dispatch(fetchProfile(uid)),
+      dispatch(fetchExercises(uid)),
+      dispatch(fetchRoutines(uid)),
+      dispatch(fetchSchedule(uid)),
+      dispatch(fetchSessions(uid)),
+    ]);
+  }
+
+  async function handleExport() {
+    setDmBusy(true);
+    try {
+      const data = await exportUserData(uid);
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `gymbro-export-${new Date().toISOString().slice(0, 10)}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+      dispatch(showSnackbar({ message: 'Data exported!' }));
+    } catch {
+      dispatch(showSnackbar({ message: 'Export failed', severity: 'error' }));
+    } finally {
+      setDmBusy(false);
+    }
+  }
+
+  function handleImportFile(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = ev => {
+      try {
+        const parsed = JSON.parse(ev.target!.result as string) as GymBroExport;
+        if (parsed.version !== 1 || !parsed.data?.profile) throw new Error('Invalid format');
+        setPendingImport(parsed);
+        setImportOpen(true);
+      } catch {
+        dispatch(showSnackbar({ message: 'Invalid export file', severity: 'error' }));
+      }
+    };
+    reader.readAsText(file);
+    e.target.value = '';
+  }
+
+  async function handleConfirmImport() {
+    if (!pendingImport) return;
+    setImportOpen(false);
+    setDmBusy(true);
+    try {
+      await importUserData(uid, pendingImport);
+      await reloadData();
+      dispatch(showSnackbar({ message: 'Data imported successfully!' }));
+    } catch {
+      dispatch(showSnackbar({ message: 'Import failed', severity: 'error' }));
+    } finally {
+      setDmBusy(false);
+      setPendingImport(null);
+    }
+  }
+
+  async function handleConfirmDelete() {
+    setDeleteOpen(false);
+    setDmBusy(true);
+    try {
+      await deleteAllUserData(uid);
+      localStorage.removeItem('gymbro_workout_draft');
+      await reloadData();
+      dispatch(showSnackbar({ message: 'All data deleted' }));
+    } catch {
+      dispatch(showSnackbar({ message: 'Delete failed', severity: 'error' }));
+    } finally {
+      setDmBusy(false);
+    }
   }
 
   return (
@@ -119,7 +212,7 @@ function ProfileForm({ stored, uid }: { stored: UserProfile; uid: string }) {
 
       {/* Recommendations */}
       {recs ? (
-        <Card sx={{ borderRadius: 3 }} elevation={2}>
+        <Card sx={{ borderRadius: 3, mb: 3 }} elevation={2}>
           <CardContent>
             <Stack direction="row" alignItems="center" spacing={1} mb={2}>
               <Info color="primary" />
@@ -157,10 +250,88 @@ function ProfileForm({ stored, uid }: { stored: UserProfile; uid: string }) {
           </CardContent>
         </Card>
       ) : (
-        <Alert severity="info" sx={{ borderRadius: 2 }}>
+        <Alert severity="info" sx={{ borderRadius: 2, mb: 3 }}>
           Fill in your stats above to see calorie and protein recommendations.
         </Alert>
       )}
+
+      {/* Data Management */}
+      <Card sx={{ borderRadius: 3, mb: 3 }} elevation={2}>
+        <CardContent>
+          <Typography variant="subtitle1" fontWeight={700} mb={2}>Data Management</Typography>
+          <Stack spacing={1.5}>
+            <Button
+              variant="outlined"
+              startIcon={dmBusy ? <CircularProgress size={16} /> : <Download />}
+              onClick={handleExport}
+              disabled={dmBusy}
+              fullWidth
+              sx={{ borderRadius: 2 }}
+            >
+              Export Data
+            </Button>
+            <Button
+              variant="outlined"
+              startIcon={<Upload />}
+              disabled={dmBusy}
+              fullWidth
+              sx={{ borderRadius: 2 }}
+              onClick={() => fileInputRef.current?.click()}
+            >
+              Import Data
+            </Button>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".json"
+              hidden
+              onChange={handleImportFile}
+            />
+            <Button
+              variant="outlined"
+              color="error"
+              startIcon={<DeleteForever />}
+              onClick={() => setDeleteOpen(true)}
+              disabled={dmBusy}
+              fullWidth
+              sx={{ borderRadius: 2 }}
+            >
+              Delete All Data
+            </Button>
+          </Stack>
+        </CardContent>
+      </Card>
+
+      {/* Delete confirmation dialog */}
+      <Dialog open={deleteOpen} onClose={() => setDeleteOpen(false)}>
+        <DialogTitle>Delete All Data?</DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            This will permanently delete all your workouts, routines, exercises, and profile data.
+            Default data will be restored and the setup wizard will appear. This cannot be undone.
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setDeleteOpen(false)}>Cancel</Button>
+          <Button color="error" variant="contained" onClick={handleConfirmDelete}>
+            Delete Everything
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Import confirmation dialog */}
+      <Dialog open={importOpen} onClose={() => setImportOpen(false)}>
+        <DialogTitle>Import Data?</DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            This will replace all current data with the imported file. This cannot be undone.
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setImportOpen(false)}>Cancel</Button>
+          <Button variant="contained" onClick={handleConfirmImport}>Import</Button>
+        </DialogActions>
+      </Dialog>
     </>
   );
 }

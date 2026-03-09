@@ -8,6 +8,7 @@ import {
   writeBatch,
   type QueryConstraint,
 } from 'firebase/firestore';
+
 import { db } from './config';
 import { paths } from './paths';
 import type {
@@ -16,6 +17,21 @@ import type {
   WorkoutDraft,
 } from '../types';
 import { SEED_EXERCISES, SEED_ROUTINES, SEED_ROUTINE_EXERCISES, SEED_SCHEDULE } from '../data/seedData';
+
+export interface GymBroExport {
+  version: 1;
+  exportedAt: number;
+  data: {
+    profile: UserProfile;
+    exercises: Exercise[];
+    routines: Routine[];
+    routineExercises: RoutineExercise[];
+    schedule: ScheduleTemplate[];
+    sessions: WorkoutSession[];
+    entries: WorkoutEntry[];
+    sets: SetEntry[];
+  };
+}
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -277,4 +293,64 @@ export async function commitWorkout(
   }
 
   await batch.commit();
+}
+
+// ─── Data Management ──────────────────────────────────────────────────────────
+
+async function deleteCollection(colPath: string): Promise<void> {
+  const snap = await getDocs(collection(db, colPath));
+  for (let i = 0; i < snap.docs.length; i += 450) {
+    const b = writeBatch(db);
+    snap.docs.slice(i, i + 450).forEach(d => b.delete(d.ref));
+    await b.commit();
+  }
+}
+
+export async function exportUserData(uid: string): Promise<GymBroExport> {
+  const [profile, exercises, routines, routineExercises, schedule] = await Promise.all([
+    getProfile(uid),
+    getExercises(uid),
+    getRoutines(uid),
+    getRoutineExercises(uid),
+    getSchedule(uid),
+  ]);
+  const [sessions, entries, sets] = await Promise.all([
+    colDocs<WorkoutSession>(paths.sessions(uid)),
+    colDocs<WorkoutEntry>(paths.entries(uid)),
+    colDocs<SetEntry>(paths.sets(uid)),
+  ]);
+  return {
+    version: 1,
+    exportedAt: Date.now(),
+    data: { profile: profile!, exercises, routines, routineExercises, schedule, sessions, entries, sets },
+  };
+}
+
+export async function deleteAllUserData(uid: string): Promise<void> {
+  await Promise.all([
+    paths.exercises(uid), paths.routines(uid), paths.routineExercises(uid),
+    paths.schedule(uid), paths.sessions(uid), paths.entries(uid), paths.sets(uid),
+  ].map(deleteCollection));
+  await deleteDoc(doc(db, paths.profile(uid)));
+  await seedUserData(uid);
+}
+
+export async function importUserData(uid: string, exported: GymBroExport): Promise<void> {
+  await deleteAllUserData(uid);
+  const { data } = exported;
+  const allWrites: Array<[string, object]> = [
+    [paths.profile(uid), { ...data.profile, uid }],
+    ...data.exercises.map(e => [paths.exercise(uid, e.id), e] as [string, object]),
+    ...data.routines.map(r => [paths.routine(uid, r.id), r] as [string, object]),
+    ...data.routineExercises.map(re => [paths.routineExercise(uid, re.id), re] as [string, object]),
+    ...data.schedule.map(s => [paths.scheduleItem(uid, s.id), s] as [string, object]),
+    ...data.sessions.map(s => [paths.session(uid, s.id), s] as [string, object]),
+    ...data.entries.map(e => [paths.entry(uid, e.id), e] as [string, object]),
+    ...data.sets.map(s => [paths.set(uid, s.id), s] as [string, object]),
+  ];
+  for (let i = 0; i < allWrites.length; i += 450) {
+    const b = writeBatch(db);
+    allWrites.slice(i, i + 450).forEach(([p, d]) => b.set(doc(db, p), d));
+    await b.commit();
+  }
 }
