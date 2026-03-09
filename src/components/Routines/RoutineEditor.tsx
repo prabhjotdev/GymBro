@@ -107,13 +107,14 @@ export function RoutineEditor() {
   }
 
   function openEditDialog() {
+    if (!routine) return;
     setEditName(routine.name);
     setEditDesc(routine.description ?? '');
     setEditOpen(true);
   }
 
   function handleEditSave() {
-    if (!editName.trim()) return;
+    if (!editName.trim() || !routine) return;
     dispatch(upsertRoutine({ uid, routine: { ...routine, name: editName.trim(), description: editDesc.trim(), updatedAt: Date.now() } }));
     dispatch(showSnackbar({ message: 'Routine updated!' }));
     setEditOpen(false);
