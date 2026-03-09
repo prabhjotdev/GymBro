@@ -81,6 +81,7 @@ export interface SetEntry {
   reps: number;
   isWarmup?: boolean;
   completedAt?: number; // epoch ms
+  durationMinutes?: number; // for cardio exercises
 }
 
 // ─── UI / Draft Types ──────────────────────────────────────────────────────────
@@ -92,6 +93,7 @@ export interface DraftSet {
   reps: number;
   isWarmup?: boolean;
   done: boolean;
+  durationMinutes?: number; // for cardio exercises
 }
 
 export interface DraftEntry {

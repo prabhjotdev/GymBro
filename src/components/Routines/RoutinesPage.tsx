@@ -4,7 +4,7 @@ import {
   Stack, Chip, Fab, Dialog, DialogTitle, DialogContent,
   DialogActions, Button, TextField, IconButton, Menu, MenuItem,
 } from '@mui/material';
-import { Add, FitnessCenter, MoreVert } from '@mui/icons-material';
+import { Add, FitnessCenter, MoreVert, LibraryBooks } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import { useAppDispatch, useAppSelector } from '../../store/hooks';
 import { selectRoutineList, selectUid } from '../../store/selectors';
@@ -101,7 +101,16 @@ export function RoutinesPage() {
 
   return (
     <Box p={2} pb={10}>
-      <Typography variant="h5" fontWeight={700} gutterBottom>Routines</Typography>
+      <Stack direction="row" alignItems="center" justifyContent="space-between" mb={1}>
+        <Typography variant="h5" fontWeight={700}>Routines</Typography>
+        <Button
+          startIcon={<LibraryBooks />}
+          size="small"
+          onClick={() => navigate('/exercises')}
+        >
+          Exercise Library
+        </Button>
+      </Stack>
 
       <Stack spacing={1.5}>
         {routines.map(r => (

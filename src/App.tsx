@@ -14,6 +14,7 @@ import { WorkoutLogger } from './components/Workout/WorkoutLogger';
 import { ProgressPage }  from './components/Progress/ProgressPage';
 import { ProfilePage }      from './components/Profile/ProfilePage';
 import { OnboardingWizard } from './components/Onboarding/OnboardingWizard';
+import { ExercisesPage }    from './components/Exercises/ExercisesPage';
 
 function AppRoutes() {
   useAppInit();
@@ -84,6 +85,7 @@ function AppRoutes() {
           <Route path="/routines"            element={<RoutinesPage />} />
           <Route path="/routines/:routineId" element={<RoutineEditor />} />
           <Route path="/workout/current"     element={<WorkoutLogger />} />
+          <Route path="/exercises"           element={<ExercisesPage />} />
           <Route path="/progress"            element={<ProgressPage />} />
           <Route path="/profile"             element={<ProfilePage />} />
           <Route path="*"                    element={<Navigate to="/today" replace />} />
