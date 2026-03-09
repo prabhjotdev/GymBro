@@ -26,6 +26,8 @@ export function ExerciseCard({ entry, uid, defaultRest }: Props) {
   const [lastSets, setLastSets] = useState<SetEntry[]>([]);
   const [lastDate, setLastDate] = useState<number | null>(null);
 
+  const isCardio = exercise?.category === 'cardio';
+
   useEffect(() => {
     getLastPerformanceForExercise(uid, entry.exerciseId).then(res => {
       if (res) {
@@ -40,20 +42,28 @@ export function ExerciseCard({ entry, uid, defaultRest }: Props) {
   function handleAddSet(isWarmup = false) {
     const nextIndex = entry.sets.length;
     const last      = entry.sets[entry.sets.length - 1];
-    const newSet: DraftSet = {
-      id:       `${entry.id}_set${nextIndex}`,
-      setIndex: nextIndex,
-      weight:   last?.weight ?? 0,
-      reps:     last?.reps   ?? 8,
-      isWarmup,
-      done:     false,
-    };
+    const newSet: DraftSet = isCardio
+      ? {
+          id:              `${entry.id}_set${nextIndex}`,
+          setIndex:        nextIndex,
+          weight:          0,
+          reps:            0,
+          done:            false,
+          durationMinutes: last?.durationMinutes ?? 30,
+        }
+      : {
+          id:       `${entry.id}_set${nextIndex}`,
+          setIndex: nextIndex,
+          weight:   last?.weight ?? 0,
+          reps:     last?.reps   ?? 8,
+          isWarmup,
+          done:     false,
+        };
     dispatch(addSet({ entryId: entry.id, set: newSet }));
   }
 
   function handleSetChange(setIndex: number, patch: Partial<DraftSet>) {
     dispatch(updateSet({ entryId: entry.id, setIndex, patch }));
-    // Auto-start rest timer when set is marked done
     if (patch.done === true) {
       dispatch(startRestTimer(defaultRest));
     }
@@ -64,6 +74,31 @@ export function ExerciseCard({ entry, uid, defaultRest }: Props) {
   }
 
   const completedSets = entry.sets.filter(s => s.done).length;
+
+  // Build last-session subheader
+  function renderLastSession() {
+    if (!lastDate) {
+      return <Typography variant="caption" color="text.disabled">No previous data</Typography>;
+    }
+    if (isCardio) {
+      const totalMins = lastSets.reduce((sum, s) => sum + (s.durationMinutes ?? 0), 0);
+      if (totalMins === 0) return <Typography variant="caption" color="text.disabled">No previous data</Typography>;
+      const h = Math.floor(totalMins / 60);
+      const m = totalMins % 60;
+      const label = h > 0 ? `${h}h ${m}m` : `${m}m`;
+      return (
+        <Typography variant="caption" color="text.secondary">
+          Last: {label}
+        </Typography>
+      );
+    }
+    if (!best) return <Typography variant="caption" color="text.disabled">No previous data</Typography>;
+    return (
+      <Typography variant="caption" color="text.secondary">
+        Last: {best.weight}kg × {best.reps} · e1RM {best.e1rm}kg
+      </Typography>
+    );
+  }
 
   return (
     <Card elevation={2} sx={{ borderRadius: 2, mb: 2, overflow: 'visible' }}>
@@ -80,15 +115,7 @@ export function ExerciseCard({ entry, uid, defaultRest }: Props) {
             />
           </Stack>
         }
-        subheader={
-          best && lastDate ? (
-            <Typography variant="caption" color="text.secondary">
-              Last: {best.weight}kg × {best.reps} · e1RM {best.e1rm}kg
-            </Typography>
-          ) : (
-            <Typography variant="caption" color="text.disabled">No previous data</Typography>
-          )
-        }
+        subheader={renderLastSession()}
         action={
           <IconButton onClick={() => setExpanded(v => !v)}>
             {expanded ? <ExpandLess /> : <ExpandMore />}
@@ -104,8 +131,17 @@ export function ExerciseCard({ entry, uid, defaultRest }: Props) {
               <TableHead>
                 <TableRow>
                   <TableCell sx={{ py: 0.5, pl: 1 }}>#</TableCell>
-                  <TableCell sx={{ py: 0.5 }}>kg</TableCell>
-                  <TableCell sx={{ py: 0.5 }}>Reps</TableCell>
+                  {isCardio ? (
+                    <>
+                      <TableCell sx={{ py: 0.5 }}>hrs</TableCell>
+                      <TableCell sx={{ py: 0.5 }}>min</TableCell>
+                    </>
+                  ) : (
+                    <>
+                      <TableCell sx={{ py: 0.5 }}>kg</TableCell>
+                      <TableCell sx={{ py: 0.5 }}>Reps</TableCell>
+                    </>
+                  )}
                   <TableCell sx={{ py: 0.5 }}>Done</TableCell>
                   <TableCell sx={{ py: 0.5 }} />
                 </TableRow>
@@ -117,6 +153,8 @@ export function ExerciseCard({ entry, uid, defaultRest }: Props) {
                     set={s}
                     lastWeight={lastSets[s.setIndex]?.weight}
                     lastReps={lastSets[s.setIndex]?.reps}
+                    lastDurationMinutes={lastSets[s.setIndex]?.durationMinutes}
+                    isCardio={isCardio}
                     onChange={patch => handleSetChange(s.setIndex, patch)}
                     onDelete={() => handleSetDelete(s.setIndex)}
                   />
@@ -127,11 +165,13 @@ export function ExerciseCard({ entry, uid, defaultRest }: Props) {
 
           <Stack direction="row" spacing={1}>
             <Button size="small" startIcon={<Add />} onClick={() => handleAddSet(false)} sx={{ flex: 1 }}>
-              Add Set
+              {isCardio ? 'Add Session' : 'Add Set'}
             </Button>
-            <Button size="small" variant="outlined" onClick={() => handleAddSet(true)} color="warning">
-              + Warmup
-            </Button>
+            {!isCardio && (
+              <Button size="small" variant="outlined" onClick={() => handleAddSet(true)} color="warning">
+                + Warmup
+              </Button>
+            )}
           </Stack>
         </CardContent>
       </Collapse>

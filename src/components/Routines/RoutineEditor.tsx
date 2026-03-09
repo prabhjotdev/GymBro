@@ -167,9 +167,15 @@ export function RoutineEditor() {
                   <Box flex={1} onClick={() => openConfig(re)} sx={{ cursor: 'pointer' }}>
                     <Typography variant="body1" fontWeight={600}>{ex?.name ?? re.exerciseId}</Typography>
                     <Stack direction="row" spacing={0.5} flexWrap="wrap">
-                      <Chip label={`${re.defaultSets} sets`} size="small" />
-                      <Chip label={`${re.repMin}–${re.repMax} reps`} size="small" />
-                      <Chip label={`${re.restSeconds}s rest`} size="small" />
+                      {ex?.category === 'cardio' ? (
+                        <Chip label={`${re.repMin} min`} size="small" />
+                      ) : (
+                        <>
+                          <Chip label={`${re.defaultSets} sets`} size="small" />
+                          <Chip label={`${re.repMin}–${re.repMax} reps`} size="small" />
+                          <Chip label={`${re.restSeconds}s rest`} size="small" />
+                        </>
+                      )}
                     </Stack>
                   </Box>
 
@@ -219,22 +225,35 @@ export function RoutineEditor() {
         <DialogTitle>Configure Exercise</DialogTitle>
         <DialogContent>
           <Stack spacing={2} mt={1}>
-            <TextField label="Default Sets" type="number" value={cfgSets}
-              onChange={e => setCfgSets(+e.target.value)} inputProps={{ min: 1, max: 10 }} />
-            <Stack direction="row" spacing={1}>
-              <TextField label="Min Reps" type="number" value={cfgRepMin}
-                onChange={e => setCfgRepMin(+e.target.value)} inputProps={{ min: 1 }} />
-              <TextField label="Max Reps" type="number" value={cfgRepMax}
-                onChange={e => setCfgRepMax(+e.target.value)} inputProps={{ min: 1 }} />
-            </Stack>
-            <FormControl fullWidth>
-              <InputLabel>Rest Time</InputLabel>
-              <Select value={cfgRest} label="Rest Time" onChange={e => setCfgRest(+e.target.value)}>
-                {[30, 45, 60, 90, 120, 180].map(s => (
-                  <MenuItem key={s} value={s}>{s}s ({Math.floor(s/60)}:{(s%60).toString().padStart(2,'0')})</MenuItem>
-                ))}
-              </Select>
-            </FormControl>
+            {(() => {
+              const ex = configTarget ? exercises.find(e => e.id === configTarget.exerciseId) : undefined;
+              const isCardio = ex?.category === 'cardio';
+              return isCardio ? (
+                <TextField
+                  label="Default Duration (minutes)" type="number" value={cfgRepMin}
+                  onChange={e => setCfgRepMin(+e.target.value)} inputProps={{ min: 1 }}
+                />
+              ) : (
+                <>
+                  <TextField label="Default Sets" type="number" value={cfgSets}
+                    onChange={e => setCfgSets(+e.target.value)} inputProps={{ min: 1, max: 10 }} />
+                  <Stack direction="row" spacing={1}>
+                    <TextField label="Min Reps" type="number" value={cfgRepMin}
+                      onChange={e => setCfgRepMin(+e.target.value)} inputProps={{ min: 1 }} />
+                    <TextField label="Max Reps" type="number" value={cfgRepMax}
+                      onChange={e => setCfgRepMax(+e.target.value)} inputProps={{ min: 1 }} />
+                  </Stack>
+                  <FormControl fullWidth>
+                    <InputLabel>Rest Time</InputLabel>
+                    <Select value={cfgRest} label="Rest Time" onChange={e => setCfgRest(+e.target.value)}>
+                      {[30, 45, 60, 90, 120, 180].map(s => (
+                        <MenuItem key={s} value={s}>{s}s ({Math.floor(s/60)}:{(s%60).toString().padStart(2,'0')})</MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
+                </>
+              );
+            })()}
           </Stack>
         </DialogContent>
         <DialogActions>

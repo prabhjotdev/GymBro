@@ -34,12 +34,17 @@ export function AddExerciseDialog({ open, onClose, sessionId, currentOrder }: Pr
   });
 
   function handleSelect(exerciseId: string) {
-    const entryId = `${sessionId}_entry${currentOrder}`;
+    const entryId  = `${sessionId}_entry${currentOrder}`;
+    const exercise = exercises.find(e => e.id === exerciseId);
+    const isCardio = exercise?.category === 'cardio';
     const entry: DraftEntry = {
       id:         entryId,
       exerciseId,
       order:      currentOrder,
-      sets:       [{ id: `${entryId}_set0`, setIndex: 0, weight: 0, reps: 8, done: false }],
+      sets: [isCardio
+        ? { id: `${entryId}_set0`, setIndex: 0, weight: 0, reps: 0, done: false, durationMinutes: 30 }
+        : { id: `${entryId}_set0`, setIndex: 0, weight: 0, reps: 8, done: false }
+      ],
     };
     dispatch(addEntry(entry));
     onClose();
