@@ -9,7 +9,6 @@ interface Props {
   set:         DraftSet;
   lastWeight?: number;
   lastReps?:   number;
-  lastDurationMinutes?: number;
   isCardio?:   boolean;
   onChange: (patch: Partial<DraftSet>) => void;
   onDelete: () => void;
@@ -18,7 +17,7 @@ interface Props {
 const MINUTE_OPTIONS = [0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55];
 const HOUR_OPTIONS   = [0, 1, 2, 3, 4, 5];
 
-export function SetRow({ set, lastWeight, lastReps, lastDurationMinutes, isCardio, onChange, onDelete }: Props) {
+export function SetRow({ set, lastWeight, lastReps, isCardio, onChange, onDelete }: Props) {
   if (isCardio) {
     const totalMins = set.durationMinutes ?? 30;
     const hours     = Math.floor(totalMins / 60);
