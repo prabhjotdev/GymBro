@@ -1,47 +1,32 @@
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Box, Typography, Card, CardContent, CardActions,
   Button, Chip, Divider, Stack,
 } from '@mui/material';
 import { PlayArrow, CheckCircle, FitnessCenter } from '@mui/icons-material';
-import { useAppDispatch, useAppSelector } from '../../store/hooks';
+import { useAppSelector } from '../../store/hooks';
 import { selectTodayRoutine, selectDraft, selectUid, selectRecentSessions } from '../../store/selectors';
-import { startDraft } from '../../store/slices/workoutDraftSlice';
-import { generateId } from '../../utils';
-import type { DraftEntry, DraftSet, RoutineExercise } from '../../types';
+import { useBuildDraft } from '../../hooks/useBuildDraft';
+import { ExercisePickerDialog } from '../Workout/ExercisePickerDialog';
+import type { RoutineExercise } from '../../types';
 import { DAY_NAMES, formatDate, formatDuration } from '../../utils';
 
 export function TodayPage() {
-  const navigate      = useNavigate();
-  const dispatch      = useAppDispatch();
-  const uid           = useAppSelector(selectUid);
-  const todayRoutine  = useAppSelector(selectTodayRoutine);
-  const draft         = useAppSelector(selectDraft);
+  const navigate       = useNavigate();
+  const uid            = useAppSelector(selectUid);
+  const todayRoutine   = useAppSelector(selectTodayRoutine);
+  const draft          = useAppSelector(selectDraft);
   const recentSessions = useAppSelector(selectRecentSessions);
-  const allREs        = useAppSelector(s => s.routines.routineExercises);
+  const buildDraft     = useBuildDraft();
 
-  const routineExercises = todayRoutine
-    ? Object.values(allREs).filter(re => re.routineId === todayRoutine.id).sort((a,b) => a.order - b.order)
-    : [];
+  const [pickerOpen, setPickerOpen] = useState(false);
 
-  const today     = new Date();
-  const todayName = DAY_NAMES[today.getDay()];
+  const todayName = DAY_NAMES[new Date().getDay()];
 
-  function buildDraft(re: RoutineExercise[]): void {
+  function handleStart(selected: RoutineExercise[]) {
     if (!todayRoutine || !uid) return;
-    const sessionId = generateId();
-    const entries: DraftEntry[] = re.map((r, i) => {
-      const entryId = `${sessionId}_entry${i}`;
-      const sets: DraftSet[] = Array.from({ length: r.defaultSets }, (_, si) => ({
-        id:       `${entryId}_set${si}`,
-        setIndex: si,
-        weight:   0,
-        reps:     r.repMin,
-        done:     false,
-      }));
-      return { id: entryId, exerciseId: r.exerciseId, order: i, sets };
-    });
-    dispatch(startDraft({ sessionId, routineId: todayRoutine.id, startedAt: Date.now(), entries }));
+    buildDraft(todayRoutine.id, selected);
     navigate('/workout/current');
   }
 
@@ -76,28 +61,38 @@ export function TodayPage() {
       <Typography variant="h5" fontWeight={700} gutterBottom>{todayName}</Typography>
 
       {todayRoutine ? (
-        <Card sx={{ borderRadius: 3, mb: 3 }} elevation={3}>
-          <CardContent>
-            <Chip label="Today's Session" color="primary" size="small" sx={{ mb: 1 }} />
-            <Typography variant="h5" fontWeight={700}>{todayRoutine.name}</Typography>
-            {todayRoutine.description && (
-              <Typography color="text.secondary" mb={1}>{todayRoutine.description}</Typography>
-            )}
-            <Divider sx={{ my: 1.5 }} />
-            <Typography variant="body2" color="text.secondary">
-              {routineExercises.length} exercises
-            </Typography>
-          </CardContent>
-          <CardActions sx={{ px: 2, pb: 2 }}>
-            <Button
-              variant="contained" size="large" startIcon={<PlayArrow />} fullWidth
-              onClick={() => buildDraft(routineExercises)}
-              sx={{ borderRadius: 2, py: 1.5, fontSize: '1rem' }}
-            >
-              Start Workout
-            </Button>
-          </CardActions>
-        </Card>
+        <>
+          <Card sx={{ borderRadius: 3, mb: 3 }} elevation={3}>
+            <CardContent>
+              <Chip label="Today's Session" color="primary" size="small" sx={{ mb: 1 }} />
+              <Typography variant="h5" fontWeight={700}>{todayRoutine.name}</Typography>
+              {todayRoutine.description && (
+                <Typography color="text.secondary" mb={1}>{todayRoutine.description}</Typography>
+              )}
+              <Divider sx={{ my: 1.5 }} />
+              <Typography variant="body2" color="text.secondary">
+                Tap Start to choose which exercises to include
+              </Typography>
+            </CardContent>
+            <CardActions sx={{ px: 2, pb: 2 }}>
+              <Button
+                variant="contained" size="large" startIcon={<PlayArrow />} fullWidth
+                onClick={() => setPickerOpen(true)}
+                sx={{ borderRadius: 2, py: 1.5, fontSize: '1rem' }}
+              >
+                Start Workout
+              </Button>
+            </CardActions>
+          </Card>
+
+          <ExercisePickerDialog
+            open={pickerOpen}
+            routineId={todayRoutine.id}
+            routineName={todayRoutine.name}
+            onClose={() => setPickerOpen(false)}
+            onStart={handleStart}
+          />
+        </>
       ) : (
         <Card sx={{ borderRadius: 3, mb: 3 }} elevation={2}>
           <CardContent sx={{ textAlign: 'center', py: 4 }}>

@@ -13,20 +13,7 @@ import { updateProfile } from '../../store/slices/profileSlice';
 import { showSnackbar } from '../../store/slices/uiSlice';
 import type { ActivityLevel, Goal, UserProfile } from '../../types';
 import { calcCalories } from '../../utils';
-
-const ACTIVITY_OPTIONS: { value: ActivityLevel; label: string }[] = [
-  { value: 'sedentary',  label: 'Sedentary (desk job, no exercise)' },
-  { value: 'light',      label: 'Light (1–3 days/week)' },
-  { value: 'moderate',   label: 'Moderate (3–5 days/week)' },
-  { value: 'active',     label: 'Active (6–7 days/week)' },
-  { value: 'veryActive', label: 'Very Active (athlete / hard labor)' },
-];
-
-const GOAL_OPTIONS: { value: Goal; label: string; color: 'error' | 'success' | 'info' }[] = [
-  { value: 'cut',      label: 'Cut (lose fat)',      color: 'error'   },
-  { value: 'maintain', label: 'Maintain weight',     color: 'info'    },
-  { value: 'bulk',     label: 'Bulk (build muscle)', color: 'success' },
-];
+import { ACTIVITY_OPTIONS, GOAL_OPTIONS } from '../../constants/profileOptions';
 
 // Inner form — only rendered once `stored` is guaranteed non-null,
 // so useState can be initialized directly without a syncing useEffect.

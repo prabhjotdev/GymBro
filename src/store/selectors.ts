@@ -7,6 +7,16 @@ import type { DayOfWeek, RoutineExercise } from '../types';
 export const selectUid     = (s: RootState) => s.auth.uid;
 export const selectAuthLoading = (s: RootState) => s.auth.loading;
 
+// ─── Profile ──────────────────────────────────────────────────────────────────
+
+export const selectProfile = (s: RootState) => s.profile.data;
+
+export const selectNeedsOnboarding = createSelector(
+  [(s: RootState) => s.profile.data, (s: RootState) => s.profile.status],
+  (profile, status) =>
+    status === 'succeeded' && profile !== null && !profile.onboardingComplete
+);
+
 // ─── Today ────────────────────────────────────────────────────────────────────
 
 export const selectTodayRoutine = createSelector(
