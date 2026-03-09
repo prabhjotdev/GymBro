@@ -6,10 +6,10 @@ import {
   TextField, MenuItem, Select, FormControl, InputLabel, Chip,
   Alert,
 } from '@mui/material';
-import { Add, Delete, ArrowUpward, ArrowDownward, Save } from '@mui/icons-material';
+import { Add, Delete, ArrowUpward, ArrowDownward, Save, Edit as EditIcon } from '@mui/icons-material';
 import { useAppDispatch, useAppSelector } from '../../store/hooks';
 import { selectExerciseList, selectUid } from '../../store/selectors';
-import { saveRoutineExercises } from '../../store/slices/routinesSlice';
+import { saveRoutineExercises, upsertRoutine, removeRoutine } from '../../store/slices/routinesSlice';
 import { showSnackbar } from '../../store/slices/uiSlice';
 import type { RoutineExercise } from '../../types';
 import { generateId } from '../../utils';
@@ -39,6 +39,14 @@ export function RoutineEditor() {
   const [cfgRepMin, setCfgRepMin] = useState(8);
   const [cfgRepMax, setCfgRepMax] = useState(12);
   const [cfgRest, setCfgRest]   = useState(90);
+
+  // Edit routine name/description dialog
+  const [editOpen, setEditOpen] = useState(false);
+  const [editName, setEditName] = useState('');
+  const [editDesc, setEditDesc] = useState('');
+
+  // Delete routine dialog
+  const [deleteOpen, setDeleteOpen] = useState(false);
 
   if (!routine || !routineId) {
     return <Box p={2}><Alert severity="error">Routine not found</Alert></Box>;
@@ -98,16 +106,43 @@ export function RoutineEditor() {
     navigate('/routines');
   }
 
+  function openEditDialog() {
+    setEditName(routine.name);
+    setEditDesc(routine.description ?? '');
+    setEditOpen(true);
+  }
+
+  function handleEditSave() {
+    if (!editName.trim()) return;
+    dispatch(upsertRoutine({ uid, routine: { ...routine, name: editName.trim(), description: editDesc.trim(), updatedAt: Date.now() } }));
+    dispatch(showSnackbar({ message: 'Routine updated!' }));
+    setEditOpen(false);
+  }
+
+  async function handleDeleteRoutine() {
+    await dispatch(removeRoutine({ uid, id: routineId }));
+    dispatch(showSnackbar({ message: 'Routine deleted' }));
+    navigate('/routines');
+  }
+
   return (
     <Box p={2} pb={10}>
       <Stack direction="row" alignItems="center" justifyContent="space-between" mb={2}>
-        <Box>
+        <Box flex={1} minWidth={0}>
           <Typography variant="h5" fontWeight={700}>{routine.name}</Typography>
           {routine.description && (
             <Typography variant="body2" color="text.secondary">{routine.description}</Typography>
           )}
         </Box>
-        <Button variant="contained" startIcon={<Save />} onClick={handleSave}>Save</Button>
+        <Stack direction="row" spacing={1} alignItems="center" flexShrink={0}>
+          <IconButton onClick={openEditDialog} size="small">
+            <EditIcon fontSize="small" />
+          </IconButton>
+          <IconButton onClick={() => setDeleteOpen(true)} size="small" color="error">
+            <Delete fontSize="small" />
+          </IconButton>
+          <Button variant="contained" startIcon={<Save />} onClick={handleSave}>Save</Button>
+        </Stack>
       </Stack>
 
       <Stack spacing={1.5}>
@@ -204,6 +239,39 @@ export function RoutineEditor() {
         <DialogActions>
           <Button onClick={() => setConfigOpen(false)}>Cancel</Button>
           <Button variant="contained" onClick={saveConfig}>Save</Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Edit Routine Dialog */}
+      <Dialog open={editOpen} onClose={() => setEditOpen(false)} fullWidth maxWidth="xs">
+        <DialogTitle>Edit Routine</DialogTitle>
+        <DialogContent>
+          <TextField
+            autoFocus fullWidth label="Name" value={editName}
+            onChange={e => setEditName(e.target.value)} sx={{ mb: 2, mt: 1 }}
+          />
+          <TextField
+            fullWidth label="Description (optional)" value={editDesc}
+            onChange={e => setEditDesc(e.target.value)}
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setEditOpen(false)}>Cancel</Button>
+          <Button variant="contained" onClick={handleEditSave} disabled={!editName.trim()}>Save</Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Delete Routine Confirmation Dialog */}
+      <Dialog open={deleteOpen} onClose={() => setDeleteOpen(false)} fullWidth maxWidth="xs">
+        <DialogTitle>Delete Routine</DialogTitle>
+        <DialogContent>
+          <Typography>
+            Are you sure you want to delete "{routine.name}"? This cannot be undone.
+          </Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setDeleteOpen(false)}>Cancel</Button>
+          <Button variant="contained" color="error" onClick={handleDeleteRoutine}>Delete</Button>
         </DialogActions>
       </Dialog>
     </Box>
