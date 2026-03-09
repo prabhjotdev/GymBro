@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import {
   Dialog, DialogTitle, DialogContent, Box, Button,
-  MobileStepper, IconButton, useMediaQuery, useTheme, CircularProgress,
+  MobileStepper, useMediaQuery, useTheme, CircularProgress,
 } from '@mui/material';
 import { KeyboardArrowLeft, KeyboardArrowRight, Close } from '@mui/icons-material';
 import { useAppDispatch, useAppSelector } from '../../store/hooks';

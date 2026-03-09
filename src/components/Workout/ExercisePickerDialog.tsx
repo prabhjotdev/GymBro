@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import {
   Dialog, DialogTitle, DialogContent, DialogActions,
   Button, List, ListItem, ListItemButton, ListItemIcon, ListItemText,
@@ -25,14 +25,9 @@ export function ExercisePickerDialog({ open, routineId, routineName, onClose, on
   const routineExercises = useAppSelector(s => selectRoutineExercisesForRoutine(s, routineId));
   const exerciseMap      = useAppSelector(s => s.exercises.items);
 
-  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
-
-  // Reset selection every time the dialog opens or the routine changes
-  useEffect(() => {
-    if (open) {
-      setSelectedIds(new Set(routineExercises.map(re => re.id)));
-    }
-  }, [open, routineId]); // eslint-disable-line react-hooks/exhaustive-deps
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(
+    () => new Set(routineExercises.map(re => re.id))
+  );
 
   function toggle(id: string) {
     setSelectedIds(prev => {
