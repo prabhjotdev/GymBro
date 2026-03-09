@@ -101,7 +101,7 @@ export function OnboardingWizard() {
       dispatch(showSnackbar({ message: 'Could not save — please try again', severity: 'error' }));
       setSaving(false);
     }
-    // Dialog closes automatically once selectNeedsOnboarding → false (onboardingComplete set)
+    // Note: on success the dialog closes automatically once selectNeedsOnboarding → false
   }
 
   const isLastStep = step === STEPS.length - 1;
@@ -157,6 +157,7 @@ export function OnboardingWizard() {
         variant="dots"
         steps={STEPS.length}
         activeStep={step}
+        position="static"
         sx={{ px: 2, py: 1.5, bgcolor: 'transparent' }}
         backButton={
           <Button
