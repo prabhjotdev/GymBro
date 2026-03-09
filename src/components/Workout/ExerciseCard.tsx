@@ -153,7 +153,6 @@ export function ExerciseCard({ entry, uid, defaultRest }: Props) {
                     set={s}
                     lastWeight={lastSets[s.setIndex]?.weight}
                     lastReps={lastSets[s.setIndex]?.reps}
-                    lastDurationMinutes={lastSets[s.setIndex]?.durationMinutes}
                     isCardio={isCardio}
                     onChange={patch => handleSetChange(s.setIndex, patch)}
                     onDelete={() => handleSetDelete(s.setIndex)}

@@ -109,8 +109,8 @@ export function ExercisesPage() {
     setEditOpen(false);
   }
 
-  function openDelete(ex: Exercise, e: React.MouseEvent) {
-    e.stopPropagation();
+  function openDelete(ex: Exercise, evt: React.MouseEvent) {
+    evt.stopPropagation();
     setDeleteTarget(ex);
     setDeleteOpen(true);
   }
