@@ -184,7 +184,7 @@ export function ExercisesPage() {
               <ListItemSecondaryAction>
                 <IconButton
                   edge="end" size="small"
-                  onClick={e => openEdit(ex)}
+                  onClick={() => openEdit(ex)}
                   sx={{ mr: 0.5 }}
                 >
                   <EditIcon fontSize="small" />
