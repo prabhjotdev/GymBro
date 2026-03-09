@@ -12,7 +12,8 @@ import { RoutinesPage } from './components/Routines/RoutinesPage';
 import { RoutineEditor } from './components/Routines/RoutineEditor';
 import { WorkoutLogger } from './components/Workout/WorkoutLogger';
 import { ProgressPage }  from './components/Progress/ProgressPage';
-import { ProfilePage }   from './components/Profile/ProfilePage';
+import { ProfilePage }      from './components/Profile/ProfilePage';
+import { OnboardingWizard } from './components/Onboarding/OnboardingWizard';
 
 function AppRoutes() {
   useAppInit();
@@ -74,6 +75,7 @@ function AppRoutes() {
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
+      <OnboardingWizard />
       <AppShell>
         <Routes>
           <Route path="/"                    element={<Navigate to="/today" replace />} />

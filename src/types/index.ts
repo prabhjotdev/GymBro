@@ -17,6 +17,7 @@ export interface UserProfile {
   activityLevel?: ActivityLevel;
   goal?: Goal;
   darkMode?: boolean;
+  onboardingComplete?: boolean;
   createdAt: number; // epoch ms
   updatedAt: number;
 }
